@@ -2,6 +2,18 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
+<script>
+// автоязык: не-русский браузер без сохранённого выбора уводим на /en/; явный клик RU/EN пишется в localStorage
+(function(){
+  try{
+    var s = localStorage.getItem('remorvi-lang');
+    if(s === 'en'){ location.replace('en/'); return; }
+    if(s) return;
+    var ls = navigator.languages || [navigator.language || ''];
+    if(!ls.some(function(l){ return /^ru/i.test(l); })) location.replace('en/');
+  }catch(e){}
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="view-transition" content="same-origin" />
 <title>Remorvi – очистка метаданных и подготовка фото к публикации в Instagram</title>
@@ -823,6 +835,14 @@
       if(show){ lemT = setTimeout(function(){ lem.classList.add('show'); }, 550); }
       else { lem.classList.remove('show'); }   // прячется сразу, вместе с кнопкой
     }, {threshold:.12}).observe(hero);
+  })();
+  // переключатель языка: явный выбор запоминаем — автоопределение больше не спорит
+  (function(){
+    document.querySelectorAll('.lang a').forEach(function(a){
+      a.addEventListener('click', function(){
+        try{ localStorage.setItem('remorvi-lang', a.textContent.trim() === 'EN' ? 'en' : 'ru'); }catch(e){}
+      });
+    });
   })();
 </script>
 </body>

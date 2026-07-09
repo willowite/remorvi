@@ -11,9 +11,9 @@
 
 [![Telegram – @remorvibot](https://img.shields.io/badge/Telegram-%40remorvibot-2aabee?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/remorvibot?start=gh_readme_badge_en)
 &nbsp;
-![Language RU / EN](https://img.shields.io/badge/language-RU_%2F_EN-a78bfa?style=for-the-badge)
+[![Website](https://img.shields.io/badge/Website-remorvi-a78bfa?style=for-the-badge&logo=githubpages&logoColor=white)](https://willowite.github.io/remorvi/en/)
 
-**[→ Open @remorvibot](https://t.me/remorvibot?start=gh_readme_en)** · [Русский](README.ru.md)
+**[→ Open @remorvibot](https://t.me/remorvibot?start=gh_readme_en)** · [Landing page](https://willowite.github.io/remorvi/en/) · [Русский](README.ru.md)
 
 </div>
 
