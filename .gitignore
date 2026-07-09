@@ -1,0 +1,16 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.idea/
+.vscode/
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# tmp
+*.log
+node_modules/

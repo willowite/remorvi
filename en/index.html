@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="view-transition" content="same-origin" />
+<title>Remorvi – metadata cleanup and getting photos ready to post on Instagram</title>
+<meta name="description" content="remorvi in Telegram: strips AI traces in the file (C2PA, IPTC, EXIF) and applies real camera data – iPhone, Samsung and 30+ presets. Photos and videos that look shot on a phone. 3 days of Unlimited free in @remorvibot." />
+<meta property="og:title" content="Remorvi – metadata cleanup and getting photos ready to post" />
+<meta property="og:description" content="Strips AI traces (C2PA, IPTC, EXIF) and applies real camera data – iPhone, Samsung and 30+ presets. Photos and videos that look shot on a phone. 3 days of Unlimited free in @remorvibot." />
+<meta property="og:image" content="https://willowite.github.io/remorvi/assets/gh-hero-banner.jpg" />
+<meta property="og:url" content="https://willowite.github.io/remorvi/en/" />
+<meta property="og:type" content="website" />
+<link rel="canonical" href="https://willowite.github.io/remorvi/en/" />
+<link rel="preload" as="image" href="../assets/remorvi-poster.jpg" fetchpriority="high" />
+<link rel="icon" href="../assets/favicon.png" />
+<link rel="apple-touch-icon" href="../assets/favicon.png" />
+<!-- hreflang: absolute GitHub Pages URLs; on a custom domain (remorvi.ru/.com) infra (Caddy) rewrites -->
+<link rel="alternate" hreflang="en" href="https://willowite.github.io/remorvi/en/" />
+<link rel="alternate" hreflang="ru" href="https://willowite.github.io/remorvi/" />
+<link rel="alternate" hreflang="x-default" href="https://willowite.github.io/remorvi/" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400..800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0d0b14; --surface:#14111e; --surface2:#1d1530;
+    --violet:#a78bfa; --violet-hi:#c4b5fd; --tg:#0088cc;
+    --text:#ece9f5; --text-70:rgba(236,233,245,.72); --text-55:rgba(236,233,245,.55);
+    --muted:rgba(236,233,245,.62);
+    --hairline:rgba(255,255,255,.07); --hair-hi:rgba(255,255,255,.14);
+    --ease:cubic-bezier(.16,1,.3,1);
+    --r-sm:8px; --r-md:10px; --r-lg:16px;
+    --red:#f0556b; --amber:#f5c451; --green:#57d6a8;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth; interpolate-size:allow-keywords}
+  @view-transition{navigation:auto}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:"Onest",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  /* the only ambient stage light: static field above the hero, alpha ≤ .12 */
+  body::before{content:""; position:absolute; top:0; left:0; right:0; height:90vh; pointer-events:none;
+    background:radial-gradient(ellipse 80% 55% at 50% -12%, rgba(167,139,250,.12), transparent 70%)}
+  /* film grain: static SVG noise, kills the "plastic" look.
+     No mix-blend-mode: blending a fixed full-screen layer re-composited every scroll frame and caused jank */
+  body::after{content:""; position:fixed; inset:0; z-index:60; pointer-events:none; opacity:.045;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+  a{color:var(--violet-hi); text-decoration:none}
+  a:focus-visible,summary:focus-visible{outline:2px solid var(--violet); outline-offset:3px; border-radius:6px}
+  button:focus-visible{outline:2px solid var(--violet); outline-offset:3px}
+  b,strong{color:var(--text); font-weight:700}
+  .brand{font-weight:700; color:var(--violet-hi); letter-spacing:.01em}
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px}
+  .vh{position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+  .skip{position:fixed; top:10px; left:50%; z-index:100; transform:translate(-50%,-220%); background:var(--surface); border:1px solid var(--hair-hi); color:var(--text); font-weight:600; padding:10px 18px; border-radius:10px; transition:transform .15s var(--ease)}
+  .skip:focus-visible{transform:translate(-50%,0)}
+
+  /* fixed: logo mark left, language right */
+  .brandchip{position:fixed; top:16px; left:18px; z-index:20; display:flex; align-items:center; gap:9px; font-weight:800; font-size:1.02rem; letter-spacing:.01em; color:#f4f1fb}
+  .brandchip img{width:30px; height:30px}
+  /* no backdrop-filter: blurring the backdrop of a fixed element repaints on every scroll frame */
+  .lang{position:fixed; top:14px; right:16px; z-index:20; display:flex; gap:2px; background:rgba(20,17,30,.92); border:1px solid var(--hairline); border-radius:10px; padding:3px}
+  .lang a{position:relative; padding:5px 11px; border-radius:var(--r-sm); font-size:.85rem; font-weight:600; color:var(--muted)}
+  /* невидимое расширение зоны нажатия до ~44px — визуал тумблера не меняется */
+  .lang a::after{content:""; position:absolute; inset:-9px -2px}
+  .lang a[aria-current="page"]{background:var(--violet); color:#0d0b14}
+
+  /* hero: headline on a clean background, video is a 16:9 content object below, edges dissolve into the page */
+  .hero{position:relative; padding:128px 20px 0; text-align:center}
+  h1{font-size:clamp(2.1rem,5.8vw,4rem); line-height:1.06; letter-spacing:-.032em; font-weight:800; margin:0 auto .3em; max-width:19ch; text-wrap:balance}
+  h1 .accent{color:var(--violet-hi)}
+  .sub{color:var(--text-70); font-size:clamp(1.02rem,2.6vw,1.26rem); margin:0 auto 32px; max-width:46ch; text-wrap:balance}
+  .cta-row{display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap}
+  .cta{position:relative; isolation:isolate; overflow:hidden; display:inline-flex; align-items:center; gap:10px; background:var(--tg); color:var(--text); font-weight:800; font-size:1.06rem; padding:16px 32px; border-radius:var(--r-md);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1);
+    transition:background .18s var(--ease), transform .18s var(--ease)}
+  .cta > *{position:relative; z-index:1}
+  /* a shine sweeps every 6.5s — a quiet "over here"; no glow, the button stays flat */
+  .cta::after{content:""; position:absolute; top:0; bottom:0; left:0; z-index:0; width:45%; transform:translateX(-160%) skewX(-18deg);
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.34), transparent)}
+  .cta:hover{background:#0b99e0; transform:translateY(-2px)}
+  .cta:active{transform:translateY(0) scale(.985); transition-duration:.09s}
+  .cta .brand{color:var(--text)}
+  .cta .arr{display:inline-block; transition:transform .16s ease}
+  .cta:hover .arr{transform:translateX(4px)}
+  @media (prefers-reduced-motion: no-preference){
+    .cta::after{animation:ctaShine 6.5s var(--ease) infinite}
+    .cta .arr{animation:ctaNudge 6.5s var(--ease) infinite}
+  }
+  .cta:hover .arr{animation:none}
+  @keyframes ctaShine{0%,70%{transform:translateX(-160%) skewX(-18deg)}88%,100%{transform:translateX(320%) skewX(-18deg)}}
+  @keyframes ctaNudge{0%,72%,100%{transform:translateX(0)}80%{transform:translateX(5px)}88%{transform:translateX(0)}}
+  .cta2{display:inline-flex; align-items:center; padding:16px 14px; color:var(--text-70); font-weight:600; text-underline-offset:4px}
+  .cta2:hover{text-decoration:underline; color:var(--text)}
+  /* one caption format: 3D icon + hook + gloss, no frames, no pills */
+  .noterow{text-align:center; margin:26px 0 0}
+  .noterow--lead{margin:-.2em 0 40px}
+  .noteline{display:inline-flex; align-items:center; gap:14px; text-align:left}
+  .noteline .noteic{flex:none; display:block; width:42px; height:42px}
+  .notetext{display:flex; flex-direction:column; gap:1px}
+  .noteline b{font-size:1.08rem; font-weight:700; line-height:1.3; letter-spacing:-.01em; color:var(--text)}
+  .noteline small{font-size:.87rem; line-height:1.45; color:var(--text-55)}
+  /* trial gift: same format + a living box and a sheen on the hook */
+  .giftnote b{background:linear-gradient(100deg, var(--text) 44%, #fff 50%, var(--text) 56%);
+    background-size:260% 100%; background-position:120% 0; -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent}
+  @media (prefers-reduced-motion: no-preference){
+    .giftnote .noteic{animation:giftTilt 7s var(--ease) infinite}
+    .giftnote b{animation:giftSheen 7s var(--ease) infinite}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .giftnote b{background:none; -webkit-text-fill-color:var(--text); color:var(--text)}
+  }
+  @keyframes giftTilt{0%,74%,100%{transform:rotate(0) scale(1)}80%{transform:rotate(-9deg) scale(1.09)}87%{transform:rotate(6deg) scale(1.05)}93%{transform:rotate(0) scale(1)}}
+  @keyframes giftSheen{0%,58%{background-position:120% 0}88%,100%{background-position:-20% 0}}
+  /* caption entrance: the icon pops, the text follows ~40ms later (stagger) */
+  @supports (animation-timeline: view()){
+    @media (prefers-reduced-motion: no-preference){
+      .noteline:not(.giftnote) .noteic{animation:noteIcIn linear both; animation-timeline:view(); animation-range:entry 8% cover 26%}
+      .noteline:not(.giftnote) .notetext{animation:noteTextIn linear both; animation-timeline:view(); animation-range:entry 12% cover 30%}
+    }
+  }
+  @keyframes noteIcIn{from{opacity:0; transform:scale(.62) rotate(-14deg)}to{opacity:1; transform:none}}
+  @keyframes noteTextIn{from{opacity:0; transform:translateY(9px)}to{opacity:1; transform:none}}
+  .hero-video{max-width:1020px; margin:44px auto 0; aspect-ratio:16/9}
+  /* низ растворяется полностью к 96% — без серой полосы на границе маски */
+  .hero-video video{display:block; width:100%; height:100%; object-fit:cover;
+    -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 16%, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 18%, #000 76%, transparent 96%);
+    -webkit-mask-composite:source-in;
+    mask-image:linear-gradient(90deg, transparent 0, #000 16%, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 18%, #000 76%, transparent 96%);
+    mask-composite:intersect}
+
+  section{padding:92px 0; scroll-margin-top:20px}
+  .kicker{display:block; text-align:center; color:var(--violet); font-size:.74rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; margin:0 0 12px}
+  h2{font-size:clamp(1.6rem,3.6vw,2.4rem); letter-spacing:-.02em; font-weight:800; margin:0 0 1.1em; text-align:center}
+
+  /* card-grammar: процесс без коробок — горизонтальная ось с узлами, рифма к вертикальному роадмапу */
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; position:relative}
+  .steps::before{content:""; position:absolute; top:20px; left:26px; right:calc((100% - 36px)/3 - 26px); height:1px;
+    background:linear-gradient(90deg, rgba(167,139,250,.38), rgba(167,139,250,.07))}
+  .step{padding:0 6px}
+  .step .n{position:relative; z-index:1; display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; background:var(--bg); border:1px solid rgba(167,139,250,.4); color:var(--violet); font-weight:800; margin-bottom:14px}
+  .step b{display:block; margin-bottom:4px}
+  .step p{margin:0; color:var(--text-70); font-size:1rem}
+
+  /* proof: no frames or boxes — the image dissolves into the page background */
+  .proofimg{display:block; width:min(1040px,100%); height:auto; margin:0 auto 10px;
+    -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 14%, #000 86%, transparent 100%), linear-gradient(180deg, transparent 0, #000 16%, #000 82%, transparent 100%);
+    -webkit-mask-composite:source-in;
+    mask-image:linear-gradient(90deg, transparent 0, #000 14%, #000 86%, transparent 100%), linear-gradient(180deg, transparent 0, #000 16%, #000 82%, transparent 100%);
+    mask-composite:intersect}
+
+  .tablewrap{overflow-x:auto; border:1px solid var(--hairline); border-radius:var(--r-lg);
+    background:
+      linear-gradient(90deg, var(--surface) 62%, transparent) 0 0 / 40px 100% no-repeat local,
+      linear-gradient(90deg, transparent 38%, var(--surface)) 100% 0 / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.5), transparent) 0 0 / 22px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.5), transparent) 100% 0 / 22px 100% no-repeat scroll,
+      var(--surface)}
+  .tablewrap:focus-visible{outline:2px solid var(--violet); outline-offset:3px}
+  table{width:100%; border-collapse:separate; border-spacing:0; font-size:.95rem; min-width:640px}
+  th,td{padding:15px 18px; text-align:left; vertical-align:top}
+  thead th{font-weight:600; font-size:.72rem; letter-spacing:.09em; text-transform:uppercase; color:var(--text-55); border-bottom:1px solid var(--hair-hi)}
+  thead th:not(:first-child){text-align:center; width:11%}
+  td.c{text-align:center; vertical-align:middle}
+  tbody td,tbody th{border-bottom:1px solid var(--hairline)}
+  tbody tr:last-child td,tbody tr:last-child th{border-bottom:none}
+  tbody tr{transition:background .2s var(--ease)}
+  tr.ours td,tr.ours th{background:rgba(167,139,250,.1); border-top:1px solid rgba(167,139,250,.3)}
+  tr.ours .trace b{color:var(--violet-hi)}
+  .trace{font-weight:600; color:var(--text)}
+  .trace small{display:block; font-weight:400; color:var(--text-55); font-size:.8rem; margin-top:3px; line-height:1.4}
+  .dot{position:relative; display:inline-block; width:18px; height:18px; border-radius:50%; vertical-align:middle; flex:none; border:1px solid var(--hair-hi); background:var(--surface2); box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  .dot::before{content:""; position:absolute; top:50%; left:50%; width:7px; height:7px; border-radius:50%; transform:translate(-50%,-50%)}
+  .dot.r{border-color:rgba(240,85,107,.4); background:rgba(240,85,107,.08)}
+  .dot.r::before{background:var(--red)}
+  .dot.a{border-color:rgba(245,196,81,.42); background:rgba(245,196,81,.08)}
+  .dot.a::before{background:var(--amber)}
+  .dot.g{border-color:rgba(87,214,168,.38); background:rgba(87,214,168,.07)}
+  .dot.g::before{background:var(--green)}
+  .dot.ok{border-color:rgba(87,214,168,.48); background:rgba(87,214,168,.1)}
+  .dot.ok::before{display:none}
+  .dot.ok::after{content:""; position:absolute; inset:0; background:center/10px 10px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 6l2.5 2.5 4.5-5' stroke='%2357d6a8' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+  .legend{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); margin:16px auto 0; background:var(--surface); border:1px solid var(--hairline); border-radius:var(--r-lg); overflow:hidden}
+  .legend-item{display:flex; align-items:flex-start; gap:12px; padding:16px 20px; color:var(--text-70); font-size:.86rem; line-height:1.5; border-top:1px solid var(--hairline); transition:background .2s var(--ease)}
+  .legend-item:nth-child(-n+2){border-top:none}
+  .legend-item:nth-child(even){border-left:1px solid var(--hairline)}
+  .legend-item .dot{margin-top:1px}
+  .legend-item--ok > span:not(.dot){color:var(--text)}
+  @media(max-width:640px){.legend{grid-template-columns:1fr}.legend-item{border-left:none}.legend-item:nth-child(2){border-top:1px solid var(--hairline)}}
+  .payoff{margin-top:16px; background:rgba(167,139,250,.06); border:1px solid rgba(167,139,250,.2); border-radius:var(--r-lg); padding:22px 28px; text-align:center; font-size:1rem; color:var(--text-70); line-height:1.6}
+  .payoff b{color:var(--violet-hi)}
+
+  .feat{display:grid; grid-template-columns:repeat(2,1fr); gap:16px}
+  .feat > div{display:flex; gap:16px; align-items:flex-start; background:var(--surface); border:1px solid var(--hairline); border-radius:var(--r-lg); padding:22px; transition:border-color .2s var(--ease), background .2s var(--ease)}
+  .feat .ic{flex:none; display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:12px; background:linear-gradient(155deg, rgba(167,139,250,.2), rgba(167,139,250,.05)); border:1px solid rgba(167,139,250,.22); color:var(--violet-hi); box-shadow:inset 0 1px 0 rgba(255,255,255,.06); transition:transform .2s var(--ease)}
+  .feat .ic svg{width:21px; height:21px}
+  .feat p{margin:0; color:var(--text-70); font-size:1rem; line-height:1.5}
+  .feat b{display:block; color:var(--text); margin-bottom:5px; font-size:1.02rem}
+
+  /* social proof: one large centered line, no card frame */
+  .proofsec{padding:60px 0}
+  .proofstat{max-width:760px; margin:0 auto; text-align:center; font-size:clamp(1.3rem,3.4vw,2rem); line-height:1.4; font-weight:600; color:var(--text-70); letter-spacing:-.01em; text-wrap:balance}
+  .proofstat b{color:var(--violet-hi); font-weight:800; font-variant-numeric:tabular-nums}
+
+  /* slides: horizontal scroll-snap carousel */
+  .deckwrap{position:relative}
+  /* no scrollbar: drag the slides directly, same as the geo carousel */
+  .deck{display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; padding:4px; scrollbar-width:none; cursor:grab; -webkit-overflow-scrolling:touch}
+  .deck::-webkit-scrollbar{display:none}
+  .deck.drag{cursor:grabbing; scroll-snap-type:none; scroll-behavior:auto}
+  .deck.drag img{pointer-events:none}
+  .decknav{position:absolute; top:50%; transform:translateY(-50%); display:none; align-items:center; justify-content:center; width:44px; height:44px; padding:0; border-radius:50%; border:1px solid var(--hair-hi); background:rgba(13,11,20,.85); color:var(--text); cursor:pointer; z-index:2; transition:border-color .2s var(--ease), background .2s var(--ease), opacity .2s var(--ease)}
+  .decknav svg{width:18px; height:18px}
+  .decknav.prev{left:-14px}
+  .decknav.next{right:-14px}
+  .decknav[disabled]{opacity:.3; cursor:default; pointer-events:none}
+  @media(min-width:700px){.decknav{display:flex}}
+  .slide{scroll-snap-align:center; flex:0 0 auto; width:min(210px,60vw); padding:0; margin:0; border:1px solid var(--hairline); border-radius:var(--r-lg); background:var(--surface); cursor:pointer; overflow:hidden; user-select:none; transition:border-color .2s var(--ease), transform .2s var(--ease)}
+  .slide img{display:block; width:100%; height:auto; aspect-ratio:9/16; object-fit:cover; -webkit-user-drag:none}
+
+  /* lightbox: native <dialog> */
+  .lightbox{margin:auto; border:none; padding:0; background:transparent; color:var(--text); max-width:min(94vw,520px); max-height:94vh; overflow:visible}
+  .lightbox::backdrop{background:rgba(6,4,12,.84); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px)}
+  .lb-fig{margin:0; position:relative; display:flex; flex-direction:column; align-items:center}
+  .lb-fig img{display:block; width:auto; height:auto; max-width:100%; max-height:80vh; border-radius:var(--r-lg); border:1px solid var(--hair-hi)}
+  .lb-fig figcaption{text-align:center; color:var(--text-70); font-size:.92rem; line-height:1.5; margin-top:14px; padding:0 10px; text-wrap:balance}
+  .lb-btn{position:absolute; z-index:2; display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:999px; border:1px solid var(--hair-hi); background:rgba(20,17,30,.92); color:var(--text); font-size:1.5rem; line-height:1; cursor:pointer; transition:background .18s var(--ease), border-color .18s var(--ease)}
+  .lb-btn:hover{background:var(--surface2); border-color:rgba(255,255,255,.28)}
+  .lb-close{top:8px; right:8px; font-size:1.4rem}
+  .lb-nav{top:50%; transform:translateY(-50%)}
+  .lb-prev{left:8px}
+  .lb-next{right:8px}
+  @media(min-width:700px){.lb-prev{left:-64px}.lb-next{right:-64px}.lb-close{top:-14px; right:-14px}}
+
+  /* star CTA: official GitHub widget, centered */
+  .starcta{display:flex; align-items:center; gap:16px; max-width:560px; margin:38px auto 0; background:var(--surface); border:1px solid var(--hairline); border-radius:var(--r-lg); padding:18px 22px; text-align:left; color:inherit; cursor:pointer; transition:border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease)}
+  .starcta > svg{width:30px; height:30px; color:var(--violet); flex:none; transition:transform .25s var(--ease), color .25s var(--ease)}
+  .starcta b{display:block; color:var(--text); font-size:1.02rem; line-height:1.35}
+  .starcta small{display:block; color:var(--muted); font-size:.85rem; margin-top:2px}
+  .ghpill{flex:none; margin-left:auto; display:inline-flex; align-items:center; gap:8px; padding:11px 18px; background:var(--surface2); border:1px solid var(--hair-hi); border-radius:999px; font-weight:800; font-size:.95rem; color:var(--text); box-shadow:inset 0 1px 0 rgba(255,255,255,.05); transition:background .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease)}
+  .ghpill svg{width:18px; height:18px; flex:none}
+  @media(max-width:600px){.starcta{flex-wrap:wrap; justify-content:center; text-align:center}.starcta > span:not(.ghpill){flex:1 1 100%}.ghpill{margin:2px auto 0}}
+
+  .quotes{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  .quote{display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--hairline); border-radius:var(--r-lg); padding:22px; font-size:1rem; line-height:1.65; color:var(--text-70)}
+  .quote::before{content:"“"; font-size:1.9rem; line-height:1; color:var(--violet); opacity:.6; margin-bottom:10px}
+  .quote p{margin:0 0 16px; flex:1}
+  .quote cite{font-style:normal; font-weight:700; color:var(--text); font-size:.9rem}
+  @media(max-width:900px){.quotes{grid-template-columns:1fr; max-width:560px; margin:0 auto}}
+  /* proof from the reviews: a strip of 9 geo screenshots (dark/light), horizontal scroll */
+  .geowrap{position:relative; margin:20px 0 0}
+  .geodeck{display:flex; gap:16px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth;
+    padding:2px; scrollbar-width:none; cursor:grab; -webkit-overflow-scrolling:touch}
+  .geodeck::-webkit-scrollbar{display:none}
+  .geodeck.drag{cursor:grabbing; scroll-snap-type:none; scroll-behavior:auto}
+  .geodeck.drag img{pointer-events:none}
+  /* ширина слайда = ширина карточки отзыва (3 в ряд, тот же gap 16px) */
+  .geoslide{scroll-snap-align:start; flex:0 0 calc((100% - 32px)/3); border-radius:var(--r-lg);
+    border:1px solid var(--hairline); overflow:hidden; background:var(--surface); user-select:none; -webkit-user-drag:none;
+    transition:border-color .2s var(--ease)}
+  .geoslide img{display:block; width:100%; height:auto; -webkit-user-drag:none}
+  @media(max-width:900px){.geoslide{flex-basis:100%}}
+  .geonav{position:absolute; top:calc(50% - 8px); transform:translateY(-50%); display:none; align-items:center; justify-content:center;
+    width:44px; height:44px; padding:0; border-radius:50%; border:1px solid var(--hair-hi); background:rgba(13,11,20,.85);
+    color:var(--text); cursor:pointer; z-index:2; transition:border-color .2s var(--ease), background .2s var(--ease), opacity .2s var(--ease)}
+  .geonav svg{width:18px; height:18px}
+  .geonav.prev{left:-24px} .geonav.next{right:-24px}
+  .geonav[disabled]{opacity:.3; cursor:default; pointer-events:none}
+  @media(min-width:700px){.geonav{display:flex}}
+
+  .faq{max-width:760px; margin:0 auto}
+  .faq details{background:var(--surface); border:1px solid var(--hairline); border-radius:var(--r-lg); margin-bottom:10px; transition:border-color .2s var(--ease)}
+  .faq details[open]{border-color:rgba(167,139,250,.35)}
+  .faq summary{cursor:pointer; padding:16px 20px; font-weight:600; list-style:none; display:flex; justify-content:space-between; align-items:center; gap:12px}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:"+"; content:"+" / ""; color:var(--violet); font-size:1.35rem; font-weight:400; line-height:1; transition:transform .2s ease; flex:none}
+  .faq details[open] summary::after{transform:rotate(45deg)}
+  .faq details::details-content{opacity:0; height:0; overflow:hidden; transition:height .28s ease, opacity .28s ease, content-visibility .28s allow-discrete}
+  .faq details[open]::details-content{opacity:1; height:auto}
+  .faq details p{margin:0; padding:0 20px 16px; color:var(--text-70)}
+
+  ul.timeline{list-style:none; padding:0; margin:0 auto; max-width:620px; position:relative}
+  ul.timeline::before{content:""; position:absolute; left:11px; top:6px; bottom:16px; width:2px; background:linear-gradient(180deg, var(--violet), rgba(167,139,250,.15))}
+  ul.timeline li{position:relative; padding:0 0 26px 44px}
+  ul.timeline li:last-child{padding-bottom:0}
+  ul.timeline .node{position:absolute; left:0; top:1px; width:24px; height:24px; border-radius:50%; background:var(--bg); border:2px solid var(--violet)}
+  ul.timeline .node::after{content:""; position:absolute; inset:5px; border-radius:50%; background:var(--violet)}
+  ul.timeline .tag{display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--violet); background:rgba(167,139,250,.12); border-radius:6px; padding:2px 9px; margin-bottom:7px}
+  ul.timeline b{display:block; color:var(--text); margin-bottom:3px; font-size:1.02rem}
+  ul.timeline p{margin:0; color:var(--text-70); font-size:1rem}
+  .table-intro{text-align:center; color:var(--text-70); max-width:640px; margin:-.4em auto 30px}
+  /* мобильный cue: вердикт-колонки за фолдом, подсказка как у .decknote */
+  .tablehint{display:none; text-align:center; color:var(--text-55); font-size:.85rem; margin:10px 0 0}
+
+  footer{position:relative; overflow:hidden; text-align:center; color:var(--muted); font-size:.88rem; padding:40px 20px 56px}
+  .footer-mark{font-size:clamp(4rem,15vw,11rem); font-weight:800; letter-spacing:.02em; font-kerning:normal; line-height:.85; margin:0 0 34px; text-align:center; color:rgba(167,139,250,.07); user-select:none}
+  .fnav{display:flex; flex-wrap:wrap; gap:8px 22px; justify-content:center; margin-bottom:18px; font-size:.92rem}
+  /* hit-area до ~44px без изменения ритма футера */
+  .fnav a{padding:10px 2px; margin:-10px -2px}
+
+  /* floating CTA: appears after the hero */
+  .fab{position:fixed; right:16px; bottom:16px; z-index:20; isolation:isolate; overflow:hidden; display:inline-flex; align-items:center; gap:8px; background:var(--tg); color:var(--text); font-weight:800; font-size:.95rem; padding:12px 20px; border-radius:999px; box-shadow:inset 0 1px 0 rgba(255,255,255,.1), 0 8px 26px rgba(0,0,0,.4); opacity:0; visibility:hidden; transform:translateY(16px); pointer-events:none; transition:opacity .25s ease, visibility .25s, transform .25s ease, background .18s var(--ease)}
+  .fab.show{opacity:1; visibility:visible; transform:none; pointer-events:auto}
+  /* mascot lemur peeks out from behind the button — quiet wow signal; first-show delay lives in JS,
+     hides in sync with the button; ducks behind it on hover, pops back when the cursor leaves */
+  .fablemur{position:fixed; right:44px; bottom:38px; z-index:19; width:76px; pointer-events:none;
+    opacity:0; visibility:hidden; transform:translateY(26px);
+    transition:opacity .15s ease, visibility .15s, transform .17s ease; /* hides faster than the button — ducks first */
+    filter:drop-shadow(0 3px 8px rgba(0,0,0,.35))}
+  .fablemur.show{opacity:1; visibility:visible; transform:none;
+    transition:opacity .3s ease, visibility .3s, transform .45s cubic-bezier(.34,1.56,.64,1)}
+  @media (hover:hover) and (pointer:fine){
+    .fab:hover + .fablemur{opacity:0; transform:translateY(26px); transition:opacity .2s ease, transform .24s ease}
+  }
+  .fablemur img{display:block; width:100%; height:auto; transform-origin:50% 100%}
+  @media (prefers-reduced-motion: no-preference){
+    .fablemur.show img{animation:lemurTilt 9s var(--ease) 3s infinite}
+  }
+  @keyframes lemurTilt{0%,88%,100%{transform:rotate(0)}91%{transform:rotate(-5deg)}95%{transform:rotate(3deg)}}
+  .fab > *{position:relative; z-index:1}
+  .fab::after{content:""; position:absolute; top:0; bottom:0; left:0; z-index:0; width:45%; transform:translateX(-160%) skewX(-18deg);
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent)}
+  .fab:active{transform:scale(.96); transition-duration:.09s}
+  @media (prefers-reduced-motion: no-preference){
+    .fab.show::after{animation:ctaShine 6.5s var(--ease) infinite}
+  }
+
+  /* hover accents only for cursor devices; no glow */
+  @media (hover:hover) and (pointer:fine){
+    .feat > div:hover{border-color:var(--hair-hi)}
+    .step:hover .n{border-color:rgba(167,139,250,.75)}
+    .feat > div:hover .ic{transform:translateY(-2px)}
+    tbody tr:hover td,tbody tr:hover th{background:rgba(167,139,250,.05)}
+    tr.ours:hover td,tr.ours:hover th{background:rgba(167,139,250,.15)}
+    .legend-item:hover{background:rgba(167,139,250,.04)}
+    .fab:hover{background:#0b99e0; transform:translateY(-2px)}
+    .slide:hover{border-color:var(--hair-hi); transform:translateY(-2px)}
+    .starcta:hover{border-color:rgba(167,139,250,.45); background:rgba(167,139,250,.06); transform:translateY(-1px)}
+    .starcta:hover > svg{transform:scale(1.18) rotate(-8deg); color:var(--violet-hi)}
+    .starcta:hover .ghpill{background:var(--violet); border-color:var(--violet); color:#0d0b14}
+    .decknav:hover{border-color:rgba(167,139,250,.45); background:rgba(167,139,250,.12)}
+    .geonav:hover{border-color:rgba(167,139,250,.45); background:rgba(167,139,250,.12)}
+    .geoslide:hover{border-color:var(--hair-hi)}
+    /* pointer devices: soft snap so arrows and wheel don't bounce back */
+    .deck{scroll-snap-type:x proximity}
+  }
+
+  /* motion: scroll reveal with a safe fallback (visible if unsupported) */
+  @supports (animation-timeline: view()){
+    @media (prefers-reduced-motion: no-preference){
+      .reveal{opacity:0; animation:revealUp linear both; animation-timeline:view(); animation-range:entry 0% cover 34%}
+      @keyframes revealUp{from{opacity:0; transform:translateY(16px)}60%{opacity:1}to{opacity:1; transform:none}}
+    }
+  }
+  /* typography polish (layout properties, not animation): kills orphans and hanging widows */
+  h2,.kicker{text-wrap:balance}
+  .step p,.feat p,.quote p,.table-intro,.payoff,ul.timeline p,.faq details p,.noteline small{text-wrap:pretty}
+  /* motion v2: meaning-bearing cascades (transform/clip-path only, opacity comes from .reveal) */
+  @supports (animation-timeline: view()){
+    @media (prefers-reduced-motion: no-preference){
+      /* #how — steps arrive one by one 1→2→3 = the sequence of the process */
+      #how .step{animation:stepUp linear both; animation-timeline:view(); animation-range:entry 5% cover 40%}
+      #how .step:nth-child(2){animation-range:entry 12% cover 47%}
+      #how .step:nth-child(3){animation-range:entry 19% cover 54%}
+      /* #roadmap — the axis draws top to bottom, nodes unfurl after the line */
+      ul.timeline::before{animation:lineDraw linear both; animation-timeline:view(); animation-range:entry 10% cover 70%}
+      ul.timeline .node{animation:nodeIn linear both; animation-timeline:view(); animation-range:entry 18% cover 48%}
+      ul.timeline li:nth-child(2) .node{animation-range:entry 30% cover 60%}
+      ul.timeline li:nth-child(3) .node{animation-range:entry 42% cover 72%}
+      /* headings and subheads gently dolly toward the centre of the screen and pull back on the way out */
+      h2,.kicker,.sub{animation:titleDolly linear both; animation-timeline:view(); animation-range:cover 0% cover 100%}
+    }
+  }
+  @keyframes stepUp{from{transform:translateY(14px)}to{transform:none}}
+  @keyframes lineDraw{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+  @keyframes nodeIn{from{transform:scale(.62)}to{transform:none}}
+  @keyframes titleDolly{0%{transform:scale(.975)}42%,58%{transform:none}100%{transform:scale(.988)}}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    .fab,.fablemur,.faq details::details-content{transition:none}
+    ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none !important}
+    /* motion v2: guarantee static (rules already sit behind the no-preference gate) */
+    #how .step,ul.timeline::before,ul.timeline .node,h2,.kicker,.sub{animation:none}
+    /* slides: static grid instead of snap-scroll */
+    .deck{scroll-snap-type:none; scroll-behavior:auto; overflow:visible; flex-wrap:wrap; justify-content:center}
+    .slide{transition:none}
+    .decknav{display:none !important}
+    .geodeck{scroll-snap-type:none; scroll-behavior:auto}
+    .geonav{display:none !important}
+  }
+  @media(max-width:640px){
+    .hero{padding-top:104px}
+    .hero-video{margin-top:32px}
+    .steps,.feat{grid-template-columns:1fr}
+    .steps::before{display:none}
+    .step{padding:0}
+    table{font-size:.84rem} th,td{padding:9px 8px}
+    thead th:not(:first-child){width:auto}
+    .fab{right:12px; bottom:12px; padding:11px 16px}
+    .fablemur{width:62px; right:34px; bottom:32px}
+    section{padding:68px 0}
+    .tablehint{display:block}
+    .noterow{margin-top:22px}
+    .noteline{gap:11px}
+    .noteline .noteic{width:36px; height:36px}
+    .noteline b{font-size:1rem}
+    .noteline small{font-size:.81rem}
+  }
+</style>
+<noscript><style>.fab,.fablemur{display:none}</style></noscript>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"Will the photo or video look different?","acceptedAnswer":{"@type":"Answer","text":"No. The image itself doesn’t change by a single pixel: we only work with the service data inside the file. Quality stays untouched."}},
+    {"@type":"Question","name":"Where does the real camera data come from?","acceptedAnswer":{"@type":"Answer","text":"From a device profile: send your own shot and remorvi builds your camera’s profile from it. Or pick one of 30+ ready-made presets: iPhone, Samsung, Ray-Ban Meta and more."}},
+    {"@type":"Question","name":"What happens to my files?","acceptedAnswer":{"@type":"Answer","text":"You send a file → processing → you get it back → it’s deleted from the server. We store nothing and share nothing."}},
+    {"@type":"Question","name":"Which formats are supported?","acceptedAnswer":{"@type":"Answer","text":"Photo: JPEG, PNG, HEIC. Video: MP4, MOV. Send it as a file (📎 → “File”, not “Photo”), otherwise Telegram compresses it on upload."}},
+    {"@type":"Question","name":"How much does it cost?","acceptedAnswer":{"@type":"Answer","text":"New users get 3 days of Unlimited free, with every feature. Then two plans: Free (1 file a day) or Unlimited at 899 ₽/mo."}}
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<a class="brandchip" href="#"><img src="../assets/remorvi-mark.webp" alt="" width="30" height="30" />remorvi</a>
+<nav class="lang" aria-label="Язык / Language">
+  <a href="../">RU</a>
+  <a href="./" aria-current="page">EN</a>
+</nav>
+
+<header class="hero">
+  <h1>An AI photo or video – <span class="accent">like it was shot on a real phone</span></h1>
+  <p class="sub">Metadata cleanup and real iPhone camera parameters&nbsp;– right inside Telegram, without the AI traces Instagram and TikTok read when you post</p>
+  <div class="cta-row">
+    <a class="cta" href="https://t.me/remorvibot?start=site_home_hero_en">Open <span class="brand">@remorvibot</span> <span class="arr">→</span></a>
+    <a class="cta2" href="#check">What platforms will find ↓</a>
+  </div>
+  <p class="noteline giftnote"><img class="noteic" src="../assets/gift-3d.webp" width="42" height="42" alt="" aria-hidden="true" /><span class="notetext"><b>3 days of Unlimited, on us</b><small>Full access to every feature – for new users</small></span></p>
+  <div class="hero-video">
+    <!-- autoplay is attached by JS: wide screens only, no Save-Data, no reduced-motion; on mobile — poster + tap-to-play -->
+    <video loop muted playsinline preload="metadata" poster="../assets/remorvi-poster.jpg">
+      <source src="../assets/remorvi-loop.webm" type="video/webm" />
+      <source src="../assets/remorvi-loop.mp4" type="video/mp4" />
+    </video>
+  </div>
+</header>
+
+<main id="main">
+<section class="reveal" id="how"><div class="wrap">
+  <span class="kicker">Process</span>
+  <h2>How it works</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><b>Send a file</b><p>Drop a photo or video as a file, no compression.</p></div>
+    <div class="step"><div class="n">2</div><b>We remove the traces</b><p>Strip AI traces and “AI-made” labels, apply real camera data, set any place and time.</p></div>
+    <div class="step"><div class="n">3</div><b>Done</b><p>The file looks shot on a phone. No quality loss.</p></div>
+  </div>
+</div></section>
+
+<section class="reveal" id="privacy"><div class="wrap">
+  <span class="kicker">Privacy</span>
+  <h2>Your file doesn't stay with us</h2>
+  <img class="proofimg" src="../assets/gh-privacy-flow.jpg" width="1600" height="678" loading="lazy" decoding="async" alt="A file is sent to the bot, processed and returned – nothing stays on the server" />
+  <div class="noterow"><p class="noteline"><img class="noteic" src="../assets/note-privacy.webp" width="42" height="42" loading="lazy" alt="" aria-hidden="true" /><span class="notetext"><b>We store nothing</b><small>You send a file → processing → you get it back → it’s deleted from the server</small></span></p></div>
+</div></section>
+
+<section class="reveal" id="check"><div class="wrap">
+  <span class="kicker">The check</span>
+  <h2>What platforms find in an untouched file</h2>
+  <p class="table-intro">Instagram, TikTok and YouTube read the file on upload. Find an AI trace – they slap on an “AI-made” label: non-removable, visible to every follower.</p>
+  <img class="proofimg" src="../assets/gh-detect-clean.jpg" width="1520" height="848" loading="lazy" decoding="async" alt="Before and after: origin traces removed, the photo itself unchanged" />
+  <div class="tablewrap" tabindex="0" role="region" aria-label="Table: traces in the file and platform reactions">
+  <table>
+    <thead><tr><th scope="col">Trace in the file</th><th scope="col">Instagram</th><th scope="col">Threads</th><th scope="col">TikTok</th><th scope="col">YouTube</th><th scope="col">X</th></tr></thead>
+    <tbody>
+      <tr>
+        <th scope="row" class="trace">Hidden AI signature<small>the file itself says it’s AI-made</small></th>
+        <td class="c"><span class="dot r"></span><span class="vh">they add a label</span></td>
+        <td class="c"><span class="dot r"></span><span class="vh">they add a label</span></td>
+        <td class="c"><span class="dot r"></span><span class="vh">they add a label</span></td>
+        <td class="c"><span class="dot r"></span><span class="vh">they add a label</span></td>
+        <td class="c"><span class="dot a"></span><span class="vh">may label</span></td>
+      </tr>
+      <tr>
+        <th scope="row" class="trace">“AI-made” tag<small>left by neural nets and photo editors</small></th>
+        <td class="c"><span class="dot r"></span><span class="vh">they add a label</span></td>
+        <td class="c"><span class="dot r"></span><span class="vh">they add a label</span></td>
+        <td class="c"><span class="dot r"></span><span class="vh">they add a label</span></td>
+        <td class="c"><span class="dot a"></span><span class="vh">may label</span></td>
+        <td class="c"><span class="dot a"></span><span class="vh">may label</span></td>
+      </tr>
+      <tr>
+        <th scope="row" class="trace">Generator name in file info<small>Midjourney, Sora, Gemini/Nano Banana, GPT, Kling, Seedance</small></th>
+        <td class="c"><span class="dot a"></span><span class="vh">may label</span></td>
+        <td class="c"><span class="dot a"></span><span class="vh">may label</span></td>
+        <td class="c"><span class="dot a"></span><span class="vh">may label</span></td>
+        <td class="c"><span class="dot a"></span><span class="vh">may label</span></td>
+        <td class="c"><span class="dot g"></span><span class="vh">just remove it</span></td>
+      </tr>
+      <tr>
+        <th scope="row" class="trace">Geo and serial of the original file<small>left behind by photo editors – the platform reads them first</small></th>
+        <td class="c"><span class="dot g"></span><span class="vh">read, then removed</span></td>
+        <td class="c"><span class="dot g"></span><span class="vh">read, then removed</span></td>
+        <td class="c"><span class="dot g"></span><span class="vh">read, then removed</span></td>
+        <td class="c"><span class="dot g"></span><span class="vh">read, then removed</span></td>
+        <td class="c"><span class="dot g"></span><span class="vh">read, then removed</span></td>
+      </tr>
+      <tr>
+        <th scope="row" class="trace">A file with no camera data at all<small>what online cleaners and screenshots leave behind</small></th>
+        <td class="c"><span class="dot a"></span><span class="vh">gets through under suspicion</span></td>
+        <td class="c"><span class="dot a"></span><span class="vh">gets through under suspicion</span></td>
+        <td class="c"><span class="dot a"></span><span class="vh">gets through under suspicion</span></td>
+        <td class="c"><span class="dot a"></span><span class="vh">gets through under suspicion</span></td>
+        <td class="c"><span class="dot g"></span><span class="vh">passes fine</span></td>
+      </tr>
+      <tr class="ours">
+        <th scope="row" class="trace">Your file after <b>remorvi</b><small>real camera data, no traces left</small></th>
+        <td class="c"><span class="dot ok"></span><span class="vh">clean</span></td>
+        <td class="c"><span class="dot ok"></span><span class="vh">clean</span></td>
+        <td class="c"><span class="dot ok"></span><span class="vh">clean</span></td>
+        <td class="c"><span class="dot ok"></span><span class="vh">clean</span></td>
+        <td class="c"><span class="dot ok"></span><span class="vh">clean</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tablehint">Swipe the table sideways →</p>
+  <div class="legend" role="list" aria-label="Table marker legend">
+    <div class="legend-item" role="listitem"><span class="dot r" aria-hidden="true"></span><span>a permanent “AI-made” label everyone sees – then the shadow zone or a ban</span></div>
+    <div class="legend-item" role="listitem"><span class="dot a" aria-hidden="true"></span><span>may get flagged as AI or have its reach cut – the classic 200–300 view ceiling</span></div>
+    <div class="legend-item" role="listitem"><span class="dot g" aria-hidden="true"></span><span>no label for this – but the platform reads and remembers this data before wiping it from the public copy: what it sees in there matters</span></div>
+    <div class="legend-item legend-item--ok" role="listitem"><span class="dot ok" aria-hidden="true"></span><span>after <span class="brand">remorvi</span> processing the file reads like a live phone shot – no label, no shadow zone, no view limits</span></div>
+  </div>
+  <div class="payoff"><b>remorvi</b> removes everything suspicious the algorithms won’t let through – hidden AI markers (C2PA, EXIF, IPTC) and the generator’s fingerprints in the file info – and applies real camera data: phone model, time, location. To the platform it’s ordinary content from a phone – content it can trust.</div>
+</div></section>
+
+<section class="reveal" id="features"><div class="wrap">
+  <span class="kicker">Features</span>
+  <h2>What it does</h2>
+  <div class="feat">
+    <div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg></span><p><b>Real camera data</b>
+      your device profile – 200+ parameters from your own shot or one of 30+ presets: iPhone, Samsung, Ray-Ban Meta. Something a browser cleaner can't do</p></div>
+    <div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5.2c0 4.4-3 7.3-7 8.8-4-1.5-7-4.4-7-8.8V6l7-3z"/><path d="m9 11.6 2 2 4-4.4"/></svg></span><p><b>Not a trace of AI</b>
+      we strip AI markers and suspicious metadata – nothing for platforms to flag</p></div>
+    <div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.7"/><path d="m4.5 18 4-4a2 2 0 0 1 2.8 0l1.7 1.7"/><path d="m13 15 2-2a2 2 0 0 1 2.8 0l2.2 2.2"/></svg></span><p><b>Photo and video</b>
+      JPEG, PNG, HEIC, MP4, MOV, no re-encoding</p></div>
+    <div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span><p><b>Any location and time</b>
+      content looks shot wherever you want</p></div>
+    <div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 12 10 5 10-5"/><path d="m2 17 10 5 10-5"/></svg></span><p><b>Batch</b>
+      up to 20 files of any size at once</p></div>
+    <div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span><p><b>RU / EN</b>
+      the bot speaks both</p></div>
+  </div>
+</div></section>
+
+<section class="reveal proofsec" id="proof"><div class="wrap">
+  <!-- Social proof: live snapshot from prod Redis, 2026-07-10. Refresh via snapshot_social_proof_vitrina.py. -->
+  <p class="proofstat"><b>8,400+</b> people have processed <b>38,235</b> files with <span class="brand">remorvi</span></p>
+</div></section>
+
+<section class="reveal" id="deck"><div class="wrap">
+  <span class="kicker">The deck</span>
+  <h2>How it looks</h2>
+  <div class="deckwrap">
+    <button type="button" class="decknav prev" aria-label="Scroll slides left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+    <div class="deck" aria-label="remorvi deck slides">
+      <button type="button" class="slide" aria-label="Open slide 1 of 5"><img src="../assets/slides/en/slide-01.jpg" width="720" height="1280" loading="lazy" decoding="async" alt="The file already tells where it came from – before you even post" /></button>
+      <button type="button" class="slide" aria-label="Open slide 2 of 5"><img src="../assets/slides/en/slide-02.jpg" width="720" height="1280" loading="lazy" decoding="async" alt="What Instagram and TikTok see in the file's metadata" /></button>
+      <button type="button" class="slide" aria-label="Open slide 3 of 5"><img src="../assets/slides/en/slide-03.jpg" width="720" height="1280" loading="lazy" decoding="async" alt="The “AI-made” label is gone after processing" /></button>
+      <button type="button" class="slide" aria-label="Open slide 4 of 5"><img src="../assets/slides/en/slide-04.jpg" width="720" height="1280" loading="lazy" decoding="async" alt="Real camera data – iPhone, Samsung, Ray-Ban Meta" /></button>
+      <button type="button" class="slide" aria-label="Open slide 5 of 5"><img src="../assets/slides/en/slide-05.jpg" width="720" height="1280" loading="lazy" decoding="async" alt="Batch upload and geo profiles" /></button>
+    </div>
+    <button type="button" class="decknav next" aria-label="Scroll slides right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+  </div>
+</div></section>
+
+<dialog id="lightbox" class="lightbox" closedby="any" aria-label="Slide viewer">
+  <button type="button" class="lb-btn lb-close" aria-label="Close">&times;</button>
+  <button type="button" class="lb-btn lb-nav lb-prev" aria-label="Previous slide">&lsaquo;</button>
+  <figure class="lb-fig">
+    <img id="lb-img" src="" alt="" width="720" height="1280" />
+    <figcaption id="lb-cap"></figcaption>
+  </figure>
+  <button type="button" class="lb-btn lb-nav lb-next" aria-label="Next slide">&rsaquo;</button>
+</dialog>
+
+<section class="reveal" id="reviews"><div class="wrap">
+  <span class="kicker">Reviews</span>
+  <h2>What users say</h2>
+  <div class="quotes">
+    <div class="quote"><p>I used to get the label on this kind of content all the time. After processing in Remorvi, my second video already goes out without a label. Still watching the reach, but just the fact that the badge stopped showing up already makes me happy.</p><cite>– Calm Cat</cite></div>
+    <div class="quote"><p>Uploaded a photo to Instagram while sitting on mobile internet in Ukraine. Set the post geo to the US because I picked Florida in the bot – Instagram read it just fine and even showed I was about 0.5 km from the location. Looks very realistic.</p><cite>– Clever Fox</cite></div>
+    <div class="quote"><p>Uploaded 9 videos in a row like this – you can see the geo on the screenshots. It really helped me set up the audience geo on two different accounts: on the fresh one the audience went to the US and Korea from the very first video.</p><cite>– Playful Dog</cite></div>
+  </div>
+  <div class="geowrap">
+    <button type="button" class="geonav prev" aria-label="Scroll screenshots left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+    <div class="geodeck" role="region" aria-label="Audience screenshots from the reviews" tabindex="0">
+      <div class="geoslide"><img src="../assets/geo/geo-01.jpg" width="640" height="440" loading="lazy" decoding="async" alt="Audience screenshot 1 of 9" /></div>
+      <div class="geoslide"><img src="../assets/geo/geo-02.jpg" width="640" height="440" loading="lazy" decoding="async" alt="Audience screenshot 2 of 9" /></div>
+      <div class="geoslide"><img src="../assets/geo/geo-03.jpg" width="640" height="440" loading="lazy" decoding="async" alt="Audience screenshot 3 of 9" /></div>
+      <div class="geoslide"><img src="../assets/geo/geo-04.jpg" width="640" height="440" loading="lazy" decoding="async" alt="Audience screenshot 4 of 9" /></div>
+      <div class="geoslide"><img src="../assets/geo/geo-05.jpg" width="640" height="440" loading="lazy" decoding="async" alt="Audience screenshot 5 of 9" /></div>
+      <div class="geoslide"><img src="../assets/geo/geo-06.jpg" width="640" height="440" loading="lazy" decoding="async" alt="Audience screenshot 6 of 9" /></div>
+      <div class="geoslide"><img src="../assets/geo/geo-07.jpg" width="640" height="440" loading="lazy" decoding="async" alt="Audience screenshot 7 of 9" /></div>
+      <div class="geoslide"><img src="../assets/geo/geo-08.jpg" width="640" height="440" loading="lazy" decoding="async" alt="Audience screenshot 8 of 9" /></div>
+      <div class="geoslide"><img src="../assets/geo/geo-09.jpg" width="640" height="440" loading="lazy" decoding="async" alt="Audience screenshot 9 of 9" /></div>
+    </div>
+    <button type="button" class="geonav next" aria-label="Scroll screenshots right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+  </div>
+  <div class="noterow"><p class="noteline"><img class="noteic" src="../assets/note-reviews.webp" width="42" height="42" loading="lazy" alt="" aria-hidden="true" /><span class="notetext"><b>Reviews from our Telegram community</b><small>Stories from real @remorvibot users – the geo is right there in their screenshots</small></span></p></div>
+</div></section>
+
+<section class="reveal" id="faq"><div class="wrap">
+  <span class="kicker">FAQ</span>
+  <h2>Common questions</h2>
+  <div class="faq">
+    <details>
+      <summary>Will the photo or video look different?</summary>
+      <p>No. The image itself doesn’t change by a single pixel: we only work with the service data inside the file. Quality stays untouched.</p>
+    </details>
+    <details>
+      <summary>Where does the real camera data come from?</summary>
+      <p>From a device profile: send your own shot and <b>remorvi</b> builds your camera’s profile from it. Or pick one of 30+ ready-made presets: iPhone, Samsung, Ray-Ban Meta and more.</p>
+    </details>
+    <details>
+      <summary>What happens to my files?</summary>
+      <p>You send a file → processing → you get it back → it’s deleted from the server. We store nothing and share nothing.</p>
+    </details>
+    <details>
+      <summary>Which formats are supported?</summary>
+      <p>Photo: JPEG, PNG, HEIC. Video: MP4, MOV. Send it as a file (📎 → “File”, not “Photo”) – otherwise Telegram compresses it on upload.</p>
+    </details>
+    <details>
+      <summary>How much does it cost?</summary>
+      <p>New users get 3 days of <b>Unlimited</b> free, with every feature. Then two plans: <b>Free</b> (1 file a day) or <b>Unlimited</b> at 899&nbsp;₽/mo.</p>
+    </details>
+  </div>
+</div></section>
+
+<section class="reveal" id="roadmap"><div class="wrap">
+  <span class="kicker">Roadmap</span>
+  <h2>What’s next</h2>
+  <div class="noterow noterow--lead"><p class="noteline"><img class="noteic" src="../assets/note-roadmap.webp" width="42" height="42" loading="lazy" alt="" aria-hidden="true" /><span class="notetext"><b>What we’re building</b><small>To make prepping content for posting even easier</small></span></p></div>
+  <ul class="timeline">
+    <li><span class="node"></span><span class="tag">Soon</span><b>Check right in the browser</b><p>See what platforms will find in your file before you post – the file stays on your device.</p></li>
+    <li><span class="node"></span><span class="tag">Planned</span><b>Open library</b><p>The engine that finds AI traces in a file – we’ll open-source it.</p></li>
+    <li><span class="node"></span><span class="tag">Planned</span><b>Open platform rules</b><p>A table: what earns an “AI-made” label, a shadow zone, cut reach or a ban.</p></li>
+  </ul>
+  <a class="starcta" href="https://github.com/willowite/remorvi" target="_blank" rel="noopener" aria-label="Star the remorvi project on GitHub">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.94 6.26L21.5 9.27l-4.87 4.46 1.24 6.77L12 17.27l-5.87 3.23 1.24-6.77L2.5 9.27l6.56-1.01L12 2z"/></svg>
+    <span><b>Star it on GitHub</b><small>be first to hear about the open library and the in-browser check</small></span>
+    <span class="ghpill"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .3.2.67.8.55A10.52 10.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>Star</span>
+  </a>
+</div></section>
+
+</main>
+
+<footer>
+  <div class="footer-mark" aria-hidden="true">remorvi</div>
+  <nav class="fnav" aria-label="Sections">
+    <a href="#how">How it works</a>
+    <a href="#privacy">Privacy</a>
+    <a href="#check">The check</a>
+    <a href="#features">Features</a>
+    <a href="#faq">FAQ</a>
+    <a href="https://github.com/willowite/remorvi">GitHub</a>
+  </nav>
+  <span class="brand">remorvi</span> · photos and videos that look shot on a real phone<br>
+  <a href="https://t.me/remorvibot?start=site_home_footer_en">@remorvibot</a>
+</footer>
+
+<a class="fab" href="https://t.me/remorvibot?start=site_home_fab_en" aria-label="Open @remorvibot">Open @remorvibot <span aria-hidden="true">→</span></a>
+<span class="fablemur" aria-hidden="true"><img src="../assets/lemur-peek.webp" width="152" height="123" alt="" /></span>
+
+<script>
+  // hero video: autoplay only on wide screens, without Save-Data and without reduced-motion; otherwise poster + tap-to-play
+  (function(){
+    var v = document.querySelector('.hero-video video');
+    if(!v) return;
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var save = navigator.connection && navigator.connection.saveData;
+    var wide = matchMedia('(min-width: 700px)').matches;
+    if(!reduce && !save && wide){
+      v.autoplay = true;
+      v.play().catch(function(){});
+    } else {
+      v.style.cursor = 'pointer';
+      v.setAttribute('aria-label', 'Play video');
+      v.addEventListener('click', function(){ v.paused ? v.play() : v.pause(); });
+    }
+  })();
+  // slides: click opens the native <dialog> lightbox; ← → arrows, Esc and backdrop click close
+  (function(){
+    var dlg = document.getElementById('lightbox'), deck = document.querySelector('.deck');
+    if(!dlg || !deck || !dlg.showModal) return;
+    var slides = [].slice.call(deck.querySelectorAll('.slide img'));
+    var lbImg = document.getElementById('lb-img'), lbCap = document.getElementById('lb-cap');
+    var cur = 0;
+    function show(i){
+      cur = (i + slides.length) % slides.length;
+      var img = slides[cur];
+      lbImg.src = img.src; lbImg.alt = ''; lbCap.textContent = img.alt;
+      // preload neighbours so switching never shows a blank frame
+      [cur + 1, cur - 1].forEach(function(k){
+        var n = slides[(k + slides.length) % slides.length];
+        var p = new Image(); p.src = n.src;
+      });
+    }
+    deck.querySelectorAll('.slide').forEach(function(btn, i){
+      btn.addEventListener('click', function(){ show(i); dlg.showModal(); });
+    });
+    dlg.querySelector('.lb-prev').addEventListener('click', function(){ show(cur - 1); });
+    dlg.querySelector('.lb-next').addEventListener('click', function(){ show(cur + 1); });
+    dlg.querySelector('.lb-close').addEventListener('click', function(){ dlg.close(); });
+    dlg.addEventListener('click', function(e){ if(e.target === dlg) dlg.close(); });
+    dlg.addEventListener('keydown', function(e){
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); show(cur - 1); }
+      else if(e.key === 'ArrowRight'){ e.preventDefault(); show(cur + 1); }
+    });
+  })();
+  // slides + geo screenshots: quiet warm-up after full page load — everything is ready before the user scrolls.
+  // The IO/rootMargin approach lost the race on fast scroll; after `load` the first screen no longer suffers
+  (function(){
+    if(navigator.connection && navigator.connection.saveData) return; // keep lazy on data-saver
+    function warm(){
+      document.querySelectorAll('#deck img[loading="lazy"], .geodeck img[loading="lazy"]').forEach(function(im){ im.loading = 'eager'; });
+    }
+    function idle(){ ('requestIdleCallback' in window) ? requestIdleCallback(warm, {timeout:2000}) : setTimeout(warm, 300); }
+    if(document.readyState === 'complete') idle();
+    else window.addEventListener('load', idle);
+  })();
+  // slide carousel: arrows + drag straight on the slides (same as geo carousel); a drag never opens the lightbox
+  (function(){
+    var deck = document.querySelector('.deck');
+    var prev = document.querySelector('.decknav.prev'), next = document.querySelector('.decknav.next');
+    if(!deck || !prev || !next) return;
+    function step(){
+      var s = deck.querySelector('.slide');
+      return s ? s.offsetWidth + 14 : 240;
+    }
+    prev.addEventListener('click', function(){ deck.scrollBy({left: -step(), behavior: 'smooth'}); });
+    next.addEventListener('click', function(){ deck.scrollBy({left: step(), behavior: 'smooth'}); });
+    function sync(){
+      prev.disabled = deck.scrollLeft <= 2;
+      next.disabled = deck.scrollLeft + deck.clientWidth >= deck.scrollWidth - 2;
+    }
+    deck.addEventListener('scroll', sync, {passive: true});
+    window.addEventListener('resize', sync);
+    var down = false, sx = 0, sl = 0, moved = 0;
+    deck.addEventListener('pointerdown', function(e){
+      if(e.pointerType === 'touch') return;              // native scroll handles touch
+      down = true; moved = 0; sx = e.clientX; sl = deck.scrollLeft;
+      deck.classList.add('drag'); deck.setPointerCapture(e.pointerId);
+    });
+    deck.addEventListener('pointermove', function(e){
+      if(!down) return;
+      var dx = e.clientX - sx; moved = Math.max(moved, Math.abs(dx));
+      deck.scrollLeft = sl - dx;
+    });
+    function release(e){
+      if(!down) return;
+      down = false; deck.classList.remove('drag');
+      try{ deck.releasePointerCapture(e.pointerId); }catch(_){}
+      sync();
+    }
+    deck.addEventListener('pointerup', release);
+    deck.addEventListener('pointercancel', release);
+    deck.addEventListener('click', function(e){ if(moved > 6){ e.preventDefault(); e.stopPropagation(); } }, true);
+    sync();
+  })();
+  // geo carousel: arrows + drag straight on the cards
+  (function(){
+    var deck = document.querySelector('.geodeck');
+    if(!deck) return;
+    var prev = document.querySelector('.geonav.prev'), next = document.querySelector('.geonav.next');
+    function step(){ var s = deck.querySelector('.geoslide'); return s ? s.offsetWidth + 16 : 300; }
+    function sync(){
+      if(!prev || !next) return;
+      prev.disabled = deck.scrollLeft <= 2;
+      next.disabled = deck.scrollLeft + deck.clientWidth >= deck.scrollWidth - 2;
+    }
+    if(prev) prev.addEventListener('click', function(){ deck.scrollBy({left: -step(), behavior: 'smooth'}); });
+    if(next) next.addEventListener('click', function(){ deck.scrollBy({left: step(), behavior: 'smooth'}); });
+    deck.addEventListener('scroll', sync, {passive: true});
+    window.addEventListener('resize', sync);
+    var down = false, sx = 0, sl = 0, moved = 0;
+    deck.addEventListener('pointerdown', function(e){
+      if(e.pointerType === 'touch') return;              // touch keeps native scrolling
+      down = true; moved = 0; sx = e.clientX; sl = deck.scrollLeft;
+      deck.classList.add('drag'); deck.setPointerCapture(e.pointerId);
+    });
+    deck.addEventListener('pointermove', function(e){
+      if(!down) return;
+      var dx = e.clientX - sx; moved = Math.max(moved, Math.abs(dx));
+      deck.scrollLeft = sl - dx;
+    });
+    function release(e){
+      if(!down) return;
+      down = false; deck.classList.remove('drag');
+      try{ deck.releasePointerCapture(e.pointerId); }catch(_){}
+      sync();
+    }
+    deck.addEventListener('pointerup', release);
+    deck.addEventListener('pointercancel', release);
+    deck.addEventListener('click', function(e){ if(moved > 6) e.preventDefault(); }, true);
+    sync();
+  })();
+  // floating CTA: show once the hero is out of view
+  (function(){
+    var fab = document.querySelector('.fab'), hero = document.querySelector('.hero');
+    var lem = document.querySelector('.fablemur'), lemT;
+    if(!fab || !hero || !('IntersectionObserver' in window)) return;
+    new IntersectionObserver(function(en){
+      var show = !en[0].isIntersecting;
+      fab.classList.toggle('show', show);
+      if(!lem) return;
+      clearTimeout(lemT);
+      if(show){ lemT = setTimeout(function(){ lem.classList.add('show'); }, 550); }
+      else { lem.classList.remove('show'); }   // hides immediately, in sync with the button
+    }, {threshold:.12}).observe(hero);
+  })();
+</script>
+</body>
+</html>
