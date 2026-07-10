@@ -427,6 +427,42 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://willowite.github.io/remorvi/en/#org",
+      "name": "Remorvi",
+      "url": "https://willowite.github.io/remorvi/en/",
+      "logo": "https://willowite.github.io/remorvi/assets/remorvi-mark.webp",
+      "description": "Metadata cleanup and pre-publish checks for AI photos and videos.",
+      "sameAs": ["https://t.me/remorvibot", "https://github.com/willowite/remorvi"]
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Remorvi",
+      "url": "https://willowite.github.io/remorvi/en/",
+      "applicationCategory": "MultimediaApplication",
+      "applicationSubCategory": "Metadata editor",
+      "operatingSystem": "Telegram",
+      "inLanguage": ["ru", "en"],
+      "featureList": [
+        "Photo and video metadata cleanup (EXIF, IPTC, XMP)",
+        "Check and remove AI provenance markers (C2PA, Content Credentials)",
+        "Apply real camera data: phone model, time, location",
+        "Batch processing"
+      ],
+      "publisher": {"@id": "https://willowite.github.io/remorvi/en/#org"},
+      "offers": [
+        {"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "RUB"},
+        {"@type": "Offer", "name": "Unlimited", "price": "899", "priceCurrency": "RUB"}
+      ]
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {"@type":"Question","name":"Will the photo or video look different?","acceptedAnswer":{"@type":"Answer","text":"No. The image itself doesn’t change by a single pixel: we only work with the service data inside the file. Quality stays untouched."}},

@@ -3,15 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <script>
-// автоязык: не-русский браузер без сохранённого выбора уводим на /en/; явный клик RU/EN пишется в localStorage
+// Язык: редиректим ТОЛЬКО по сохранённому явному выбору человека.
+// Автоопределение по navigator.language тут запрещено: Googlebot рендерит JS с локалью en-US
+// и без Accept-Language — авторедирект превратил бы RU-главную в «постоянный редирект на /en/»
+// и обнулил бы hreflang-кластер. Не-русскому браузеру показываем баннер (#langbar).
 (function(){
-  try{
-    var s = localStorage.getItem('remorvi-lang');
-    if(s === 'en'){ location.replace('en/'); return; }
-    if(s) return;
-    var ls = navigator.languages || [navigator.language || ''];
-    if(!ls.some(function(l){ return /^ru/i.test(l); })) location.replace('en/');
-  }catch(e){}
+  try{ if(localStorage.getItem('remorvi-lang') === 'en') location.replace('en/'); }catch(e){}
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -69,6 +66,22 @@
   .vh{position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
   .skip{position:fixed; top:10px; left:50%; z-index:100; transform:translate(-50%,-220%); background:var(--surface); border:1px solid var(--hair-hi); color:var(--text); font-weight:600; padding:10px 18px; border-radius:10px; transition:transform .15s var(--ease)}
   .skip:focus-visible{transform:translate(-50%,0)}
+
+  /* мягкое предложение сменить язык вместо авторедиректа (SEO-safe: контент главной не подменяется) */
+  #langbar{position:fixed; left:50%; bottom:16px; transform:translate(-50%,120%); z-index:40;
+    display:none; align-items:center; gap:14px; max-width:calc(100vw - 24px);
+    background:var(--surface); border:1px solid var(--hair-hi); border-radius:var(--r-lg);
+    padding:12px 14px 12px 18px; box-shadow:0 12px 40px rgba(0,0,0,.5);
+    transition:transform .4s var(--ease)}
+  #langbar.show{display:flex; transform:translate(-50%,0)}
+  #langbar span{font-size:.92rem; color:var(--text-70)}
+  #langbar a{flex:none; background:var(--tg); color:var(--text); font-weight:700; font-size:.9rem;
+    padding:9px 16px; border-radius:var(--r-sm); box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+  #langbar a:hover{background:#0b99e0}
+  #langbar button{flex:none; width:32px; height:32px; padding:0; border:none; border-radius:50%;
+    background:transparent; color:var(--text-55); font-size:1.3rem; line-height:1; cursor:pointer}
+  #langbar button:hover{color:var(--text)}
+  @media(max-width:520px){#langbar{gap:10px; padding:10px 8px 10px 14px} #langbar span{font-size:.85rem}}
 
   /* fixed: лого-марка слева, язык справа */
   .brandchip{position:fixed; top:16px; left:18px; z-index:20; display:flex; align-items:center; gap:9px; font-weight:800; font-size:1.02rem; letter-spacing:.01em; color:#f4f1fb}
@@ -427,6 +440,42 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://willowite.github.io/remorvi/#org",
+      "name": "Remorvi",
+      "url": "https://willowite.github.io/remorvi/",
+      "logo": "https://willowite.github.io/remorvi/assets/remorvi-mark.webp",
+      "description": "Очистка метаданных и подготовка фото и видео к публикации в соцсетях.",
+      "sameAs": ["https://t.me/remorvibot", "https://github.com/willowite/remorvi"]
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Remorvi",
+      "url": "https://willowite.github.io/remorvi/",
+      "applicationCategory": "MultimediaApplication",
+      "applicationSubCategory": "Metadata editor",
+      "operatingSystem": "Telegram",
+      "inLanguage": ["ru", "en"],
+      "featureList": [
+        "Очистка метаданных фото и видео (EXIF, IPTC, XMP)",
+        "Проверка и удаление ИИ-маркеров происхождения (C2PA, Content Credentials)",
+        "Перенос данных реальной камеры: модель телефона, время, локация",
+        "Массовая обработка файлов"
+      ],
+      "publisher": {"@id": "https://willowite.github.io/remorvi/#org"},
+      "offers": [
+        {"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "RUB"},
+        {"@type": "Offer", "name": "Unlimited", "price": "899", "priceCurrency": "RUB"}
+      ]
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {"@type":"Question","name":"Фото или видео изменится внешне?","acceptedAnswer":{"@type":"Answer","text":"Нет. Сама картинка не меняется ни на пиксель: работаем только со служебными данными внутри файла. Качество остаётся исходным."}},
@@ -440,6 +489,11 @@
 </head>
 <body>
 <a class="skip" href="#main">К содержанию</a>
+<div id="langbar" role="region" aria-label="Language">
+  <span>This page is in Russian.</span>
+  <a href="en/" hreflang="en">Open in English</a>
+  <button type="button" aria-label="Dismiss">&times;</button>
+</div>
 <a class="brandchip" href="#"><img src="assets/remorvi-mark.webp" alt="" width="30" height="30" />remorvi</a>
 <nav class="lang" aria-label="Язык / Language">
   <a href="./" aria-current="page">RU</a>
@@ -835,6 +889,23 @@
       if(show){ lemT = setTimeout(function(){ lem.classList.add('show'); }, 550); }
       else { lem.classList.remove('show'); }   // прячется сразу, вместе с кнопкой
     }, {threshold:.12}).observe(hero);
+  })();
+  // не-русскому браузеру предлагаем EN-версию баннером (без редиректа — краулер видит русскую главную как есть)
+  (function(){
+    var bar = document.getElementById('langbar');
+    if(!bar) return;
+    var ls = navigator.languages || [navigator.language || ''];
+    var ru = ls.some(function(l){ return /^ru/i.test(l); });
+    var saved;
+    try{ saved = localStorage.getItem('remorvi-lang'); }catch(e){}
+    if(!ru && !saved) bar.classList.add('show');
+    bar.querySelector('a').addEventListener('click', function(){
+      try{ localStorage.setItem('remorvi-lang', 'en'); }catch(e){}
+    });
+    bar.querySelector('button').addEventListener('click', function(){
+      bar.classList.remove('show');
+      try{ localStorage.setItem('remorvi-lang', 'ru'); }catch(e){}
+    });
   })();
   // переключатель языка: явный выбор запоминаем — автоопределение больше не спорит
   (function(){
