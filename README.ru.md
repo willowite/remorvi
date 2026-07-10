@@ -9,6 +9,8 @@
 
 **Любая локация, время и данные реальной камеры. Без ИИ-следов и подозрительных метаданных**
 
+<sub>Очистка метаданных фото и видео — C2PA / Content Credentials, EXIF, IPTC и XMP проверяются и убираются до публикации.</sub>
+
 [![Telegram – @remorvibot](https://img.shields.io/badge/Telegram-%40remorvibot-2aabee?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/remorvibot?start=gh_readme_badge_ru)
 &nbsp;
 [![Сайт](https://img.shields.io/badge/Сайт-remorvi-a78bfa?style=for-the-badge&logo=githubpages&logoColor=white)](https://willowite.github.io/remorvi/)
@@ -121,6 +123,28 @@
 [![Поставь звезду](https://img.shields.io/github/stars/willowite/remorvi?style=for-the-badge&logo=github&label=%E2%AD%90%20Star&labelColor=black&color=a78bfa)](https://github.com/willowite/remorvi/stargazers)
 
 </div>
+
+## Частые вопросы
+
+### Instagram сам вешает метку «Создано ИИ»?
+
+Да. Instagram, Threads и Facebook читают C2PA Content Credentials и поле IPTC `DigitalSourceType` внутри файла при загрузке и ставят метку «AI info» автоматически. TikTok читает C2PA так же. Снять уже поставленную метку нельзя.
+
+### Что такое C2PA и Content Credentials?
+
+Отраслевой стандарт происхождения файла. Нейросети (Firefly, DALL·E, Sora, Midjourney) и редакторы (Photoshop Generative Fill) вшивают в файл подписанный манифест: «сделано или отредактировано ИИ». Он живёт внутри файла как JUMBF-блок или XMP-данные.
+
+### Какие метаданные читает и убирает remorvi?
+
+Манифесты C2PA / Content Credentials, поле IPTC `DigitalSourceType`, XMP-теги происхождения, имя нейросети в EXIF (`Software`, `UserComment`), параметры Stable Diffusion в PNG-чанках, а также гео и серийник, оставшиеся после фоторедакторов.
+
+### Уберёт ли очистка метаданных невидимые водяные знаки вроде SynthID?
+
+Нет — и ни один честный инструмент не пообещает обратного. SynthID и подобные знаки живут в пикселях, а не в метаданных. remorvi работает только с метаданными файла, и мы говорим об этом прямо, вместо обещаний «вас не найдут».
+
+### Сколько стоит?
+
+Новым пользователям — 3 дня Unlimited бесплатно. Дальше два тарифа: Free (1 файл в день) и Unlimited за 899 ₽/мес.
 
 ## Сообщество
 

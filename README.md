@@ -9,6 +9,8 @@
 
 **Any location, time and real camera data. No AI traces or suspicious metadata**
 
+<sub>Metadata cleanup for photos and videos — C2PA / Content Credentials, EXIF, IPTC and XMP are checked and removed before you post.</sub>
+
 [![Telegram – @remorvibot](https://img.shields.io/badge/Telegram-%40remorvibot-2aabee?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/remorvibot?start=gh_readme_badge_en)
 &nbsp;
 [![Website](https://img.shields.io/badge/Website-remorvi-a78bfa?style=for-the-badge&logo=githubpages&logoColor=white)](https://willowite.github.io/remorvi/en/)
@@ -121,6 +123,28 @@ What we’re building:
 [![Star](https://img.shields.io/github/stars/willowite/remorvi?style=for-the-badge&logo=github&label=%E2%AD%90%20Star&labelColor=black&color=a78bfa)](https://github.com/willowite/remorvi/stargazers)
 
 </div>
+
+## FAQ
+
+### Does Instagram label AI photos automatically?
+
+Yes. Instagram, Threads and Facebook read C2PA Content Credentials and the IPTC `DigitalSourceType` field in the file at upload and apply the “AI info” label automatically. TikTok reads C2PA the same way. The label cannot be removed once applied.
+
+### What is C2PA / Content Credentials?
+
+An industry provenance standard. Generators (Firefly, DALL·E, Sora, Midjourney) and editors (Photoshop Generative Fill) embed a signed manifest into the file stating it was made or edited with AI. It travels inside the file as a JUMBF block or XMP data.
+
+### What metadata does remorvi read and clean?
+
+C2PA / Content Credentials manifests, IPTC `DigitalSourceType`, XMP provenance tags, generator names in EXIF (`Software`, `UserComment`), Stable Diffusion parameter chunks in PNG, and the geo/serial left over by photo editors.
+
+### Will cleaning metadata remove invisible watermarks like SynthID?
+
+No — and no honest tool can claim otherwise. SynthID and similar watermarks live in the pixels, not in the metadata. remorvi works with file metadata only; we say so plainly instead of promising “undetectable”.
+
+### Is remorvi free?
+
+New users get 3 days of Unlimited free. After that: Free (1 file per day) and Unlimited (899 ₽/month).
 
 ## Community
 
